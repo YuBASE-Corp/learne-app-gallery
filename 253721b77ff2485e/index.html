@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- LEARNE_EXPIRY_BEGIN -->
+<script>
+(function(){
+  if (Date.now() > 1779167566000) {
+    document.documentElement.innerHTML = '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>こうかいきかんしゅうりょう</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:sans-serif;background:linear-gradient(180deg,#fff9ee,#f5e6b8);color:#5a3e1b;display:grid;place-items:center;min-height:100vh;padding:24px;text-align:center}h1{font-size:clamp(28px,8vw,40px);margin-bottom:16px}p{font-size:clamp(14px,4vw,18px);line-height:1.8;max-width:420px}</style></head><body><div><h1>ごめんね〜</h1><p>このゲームは こうかいきかんが おわっちゃったよ。<br>あそんでくれて ありがとう！</p></div></body>';
+  }
+})();
+</script>
+<!-- LEARNE_EXPIRY_END -->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>キャッチゲーム</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; overflow: hidden; font-family: 'Zen Maru Gothic', sans-serif; touch-action: none; }
+canvas { display: block; }
+#score-display {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  color: #fff; font-size: 24px; font-weight: bold;
+  background: rgba(0,0,0,0.5); padding: 8px 24px; border-radius: 20px;
+}
+#start-screen {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: rgba(0,0,0,0.7);
+  color: #fff; z-index: 10;
+}
+#start-screen h1 { font-size: 36px; margin-bottom: 16px; }
+#start-screen p { font-size: 18px; margin-bottom: 32px; opacity: 0.8; }
+#start-btn {
+  font-size: 24px; padding: 16px 48px; border: none; border-radius: 16px;
+  background: #e94560; color: #fff; cursor: pointer; font-family: inherit;
+}
+#start-btn:hover { background: #ff6b81; }
+.hidden { display: none !important; }
+#clear-screen {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: rgba(0,0,0,0.8);
+  color: #fff; z-index: 20;
+}
+#clear-screen h1 { font-size: 48px; margin-bottom: 16px; }
+#clear-screen p { font-size: 22px; margin-bottom: 32px; opacity: 0.9; }
+#retry-btn {
+  font-size: 24px; padding: 16px 48px; border: none; border-radius: 16px;
+  background: #f7c948; color: #333; cursor: pointer; font-family: inherit; font-weight: bold;
+}
+#retry-btn:hover { background: #ffe066; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="start-screen">
+  <h1>🍎 キャッチゲーム</h1>
+  <p>おちてくるフルーツをキャッチしよう！</p>
+  <button id="start-btn">スタート</button>
+</div>
+<div id="score-display" class="hidden">スコア: <span id="score">0</span></div>
+<div id="clear-screen" class="hidden">
+  <h1>🎉 ゲームクリア！</h1>
+  <p>3こキャッチできたよ！すごい！</p>
+  <button id="retry-btn">もういちど</button>
+</div>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+let score = 0;
+let gameRunning = false;
+const basket = { x: canvas.width / 2, y: canvas.height - 60, w: 80, h: 50 };
+const fruits = [];
+const fruitTypes = ['🍎', '🍊', '🍇', '🍓', '🍌'];
+
+function spawnFruit() {
+  if (!gameRunning) return;
+  fruits.push({
+    x: Math.random() * (canvas.width - 40) + 20,
+    y: -30,
+    speed: 2 + Math.random() * 3,
+    emoji: fruitTypes[Math.floor(Math.random() * fruitTypes.length)],
+    size: 30
+  });
+  setTimeout(spawnFruit, 800 + Math.random() * 1200);
+}
+
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw basket
+  ctx.fillStyle = '#8B4513';
+  ctx.beginPath();
+  ctx.moveTo(basket.x - basket.w/2, basket.y);
+  ctx.lineTo(basket.x + basket.w/2, basket.y);
+  ctx.lineTo(basket.x + basket.w/2 - 10, basket.y + basket.h);
+  ctx.lineTo(basket.x - basket.w/2 + 10, basket.y + basket.h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#A0522D';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Update & draw fruits
+  for (let i = fruits.length - 1; i >= 0; i--) {
+    const f = fruits[i];
+    f.y += f.speed;
+    ctx.font = f.size + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.emoji, f.x, f.y);
+
+    // Catch check
+    if (f.y > basket.y - 10 && f.y < basket.y + basket.h &&
+        f.x > basket.x - basket.w/2 && f.x < basket.x + basket.w/2) {
+      score++;
+      document.getElementById('score').textContent = score;
+      fruits.splice(i, 1);
+      if (score >= 3) {
+        gameRunning = false;
+        document.getElementById('clear-screen').classList.remove('hidden');
+      }
+    } else if (f.y > canvas.height + 30) {
+      fruits.splice(i, 1);
+    }
+  }
+
+  if (gameRunning) requestAnimationFrame(update);
+}
+
+// Mouse/Touch controls
+canvas.addEventListener('mousemove', e => { basket.x = e.clientX; });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  basket.x = e.touches[0].clientX;
+}, { passive: false });
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  basket.x = e.touches[0].clientX;
+}, { passive: false });
+
+function startGame() {
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('clear-screen').classList.add('hidden');
+  document.getElementById('score-display').classList.remove('hidden');
+  score = 0;
+  document.getElementById('score').textContent = score;
+  fruits.length = 0;
+  gameRunning = true;
+  spawnFruit();
+  update();
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('retry-btn').addEventListener('click', startGame);
+</script>
+</body>
+</html>
